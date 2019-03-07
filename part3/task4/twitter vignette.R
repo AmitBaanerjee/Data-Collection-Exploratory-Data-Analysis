@@ -1,3 +1,5 @@
+#Name-Amit Banerjee
+#Project Partner- Yogesh Sawant
 install.packages('twitteR', repos='https://cran.r-project.org')
 install.packages('ROAuth', repos = 'https://cran.r-project.org')
 library(twitteR)
@@ -13,19 +15,25 @@ token <- "128911319-Kfn1lFaMiluelOOq3PlNPpYHgyJrlydKsITvo1Cv"
 tokensecret <- "ifyZJOidCTBFQZoUqnoOBGNkCpibH8714gkMuqEbWMR8C"
 setup_twitter_oauth(apikey,apisecret,token,tokensecret)
 
+#Searching for tweets related to flu
 tweets<-searchTwitter("flu",n=10000)
 noretweets<-strip_retweets(tweets, strip_manual=TRUE, strip_mt=TRUE)
 twdf<-twListToDF(noretweets)
+
+#Finding user details from twitter handles of tweets obtained
 usernames<-lookupUsers(twdf$screenName)
 userdf<-twListToDF(usernames)
 userloc<-userdf[,c(11,12)]
 userloc[userloc==""]<-NA
 userloc<-na.omit(userloc)
 library(ggmap)
+#Calculating latitude and longitude based on user locations
 temp<-na.omit(cbind(userloc,geocode(userloc$location)))
+#Saving tweet data and user details in CSV files
 write.csv(twdf,"/Users/apple/Desktop/DIC lab 1/part3/task4/Finaltweets.csv")
 write.csv(temp,"/Users/apple/Desktop/DIC lab 1/part3/task4/userdata.csv")
 
+#Run below commands to replicate the influenza tweet distribution graph
 twdf<-read.csv("/Users/apple/Desktop/DIC lab 1/part3/task4/Finaltweets.csv")
 temp<-read.csv("/Users/apple/Desktop/DIC lab 1/part3/task4/userdata.csv")
 library(sp)
@@ -36,7 +44,6 @@ longlat<-data.frame(temp$lon,temp$lat)
 #REFERENCE:- https://stackoverflow.com/questions/8751497/latitude-longitude-coordinates-to-state-code-in-r/8751965
 latlong2state <- function(pointsDF) {
   # Prepare SpatialPolygons object with one SpatialPolygon
-  # per state (plus DC, minus HI & AK)
   states <- map('state', fill=TRUE, col="transparent", plot=FALSE)
   IDs <- sapply(strsplit(states$names, ":"), function(x) x[1])
   states_sp <- map2SpatialPolygons(states, IDs=IDs,
@@ -53,19 +60,23 @@ latlong2state <- function(pointsDF) {
   stateNames <- sapply(states_sp@polygons, function(x) x@ID)
   stateNames[indices]
 }
-
+#Calculating states from longitude and latitude parameters for all observations.
 test<-data.frame(latlong2state(longlat))
-test<-na.omit(test)   
+test<-na.omit(test)
+#Calculating frequency of each state
 final<-(table(test))
 final<-data.frame(location=names(final),frequency=c(final))
 
 states<-us_map(regions="states")
 states$full<-tolower(states$full)
 colnames(final)[1]<-'full'
+#Merging state data and final DF using outer join to cover all states
 finaldf<-merge(states,final,by="full",all.x=TRUE)
 finaldf<-finaldf[finaldf$full!="District of Columbia",]
 finaldf2<-finaldf[order(finaldf$order),]
+#Modifying the count of those states as zero which have no tweet data
 finaldf2[["frequency"]][is.na(finaldf2[["frequency"]])] <- 0
+#Plotting the heat map
 p<-ggplot()
 p<-p + geom_polygon(data=finaldf2,aes(x=long,y=lat,group=group,fill=finaldf2$frequency),size=0.2,color="black")+
   scale_fill_continuous(low="chartreuse",high="red1",guide="colorbar")
