@@ -4,3 +4,4 @@
 - Processed and cleaned the collected data using TwitteR vignette library package. 
 - Visualized geo spatial information extracted from the tweets using Google API and geo-map  libraries of R: ggplot2, ggmap, maps,and       maptools. 
 - Compared CDC flu map with own home-brewed flu map of the USA derived from the Twitter and Influenza data .
+- Deployed a webpage displaying all comparisons using Shiny R package on RStudio web server.
